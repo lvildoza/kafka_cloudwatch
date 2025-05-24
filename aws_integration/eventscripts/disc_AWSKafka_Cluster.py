@@ -22,10 +22,10 @@ Requisitos:
 - Librerías necesarias: argparse, os, json, csv, boto3, shutil, datetime  
 
 Uso:  
-python disc_AWSKafka_HostsCluster.py <perfil_aws>
+python disc_AWSKafka_Cluster.py <perfil_aws> <nombre_cluster>
 
 Ejemplo:  
-python disc_AWSKafka_HostsCluster.py UsrAWS_008_Acquiring_Prod
+python disc_AWSKafka_Cluster.py UsrAWS_008_Acquiring_Prod ConcentradorTx-prod-cluster
 """
 import argparse
 import os

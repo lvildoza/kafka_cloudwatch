@@ -1,22 +1,20 @@
 #!/opt/prisma/pythonServiciosTI/virtualEnvironments/venv3.8/bin/python
 """
-Script para obtención de métricas de Brokers de Kafka en AWS y guardado en archivos JSON y CSV.
+Script para obtención de métricas de Brokers de Kafka en AWS con manejo de errores.
 
 Autor: Leandro Vildoza  
 Empresa: CTL  
 Fecha de creación: 01/03/2025  
-Última modificación: 18/05/2025  
-Versión: 1.3  
+Última modificación: 22/05/2025  
+Versión: 1.4  
 
 Descripción:  
 - Verifica la disponibilidad de los comandos 'aws' y 'jq'.  
 - Obtiene la información de los brokers de Kafka, incluyendo nombres y detalles de clústeres utilizando el perfil de AWS proporcionado.  
-- Consulta métricas específicas de CloudWatch para cada broker de Kafka: CpuUser, KafkaAppLogsDiskUsed.  
-- Genera un único mensaje consolidado con el total de métricas obtenidas.  
-- Genera archivos JSON con las métricas procesadas.  
-- Guarda las métricas en archivos CSV para su análisis posterior.  
-- Imprime los resultados en formato JSON en la terminal.  
-- Registra eventos importantes en un archivo de log.
+- Consulta métricas específicas de CloudWatch para cada broker de Kafka: KafkaDataLogsDiskUsed, CpuUser.
+- Consulta métricas específicas de CloudWatch para cada Cluster de Kafka: offlinePartitionsCount.
+- Genera un único mensaje consolidado con el total de métricas obtenidas.
+- Imprime los resultados en formato JSON en la terminal. 
 
 Requisitos:  
 - Python 3.8+  
@@ -24,10 +22,10 @@ Requisitos:
 - Librerías necesarias: argparse, os, json, csv, boto3, shutil, datetime  
 
 Uso:  
-python disc_AWSKafka_ItemsBrokers.py <perfil_aws>  
+python disc_AWSKafka_ItemsBrokers.py <perfil_aws> <nombre_cluster>
 
 Ejemplo:  
-python disc_AWSKafka_ItemsBrokers.py UsrAWS_008_Acquiring_Prod kafka  
+python disc_AWSKafka_Items.py UsrAWS_008_Acquiring_Prod ConcentradorTx-prod-cluster
 """
 import argparse
 import os
@@ -37,15 +35,24 @@ import boto3
 import shutil
 from datetime import datetime, timedelta  # Importar timedelta
 
-# Función para el manejo de logs
-def zbx_json_output(profile, metric_type, zbx_msg, zbx_exit, zbx_value):
-    output = {
-        "info": f"disc_AWSKafka_ItemsBrokers.py {profile} {metric_type}",
-        "msg": zbx_msg,
-        "exit": zbx_exit,
-        "registros": zbx_value
+def zbx_json_output(profile, metric_type, zbx_exit, zbx_value, zbx_msg=None):
+    messages = {
+        0: "Métricas obtenidas con éxito.",
+        1: "Error en la obtención de métricas.",
+        2: "Información sobre ejecución: revisión necesaria."
     }
-    print(json.dumps(output))
+    
+    output = {
+        "{#INFO}": f"disc_AWSKafka_ItemsBrokers.py {profile} {metric_type}",
+        "{#MSG}": zbx_msg if zbx_msg else messages.get(zbx_exit, "Mensaje no definido."),
+        "{#EXIT}": str(zbx_exit),  # Convertir exit a string
+        "{#REGISTROS}": str(zbx_value)  # Convertir registros a string
+    }
+    
+    # Envolver el objeto dentro de un array "data"
+    formatted_output = {"data": [output]}
+
+    print(json.dumps(formatted_output, separators=(',', ':')))
 
 # Verificar si los comandos 'aws' y 'jq' están disponibles
 def check_commands():
@@ -145,24 +152,6 @@ def generate_metrics_json(broker_metrics, cluster_name, broker_id, broker_name):
 
     return json_data
 
-# Guardar resultado en un archivo CSV
-def save_metrics_to_csv(metrics_json, filepath):
-    with open(filepath, 'w') as csvfile:
-        writer = csv.writer(csvfile, delimiter=':')
-        writer.writerow(['Namespace', 'ClusterName', 'BrokerName', 'BrokerID', 'MetricName', 'Dimensions', 'Value'])
-        for broker_metrics in metrics_json:
-            cluster_name = broker_metrics['ClusterName']
-            broker_name = broker_metrics['BrokerName']
-            broker_id = broker_metrics['BrokerId']
-            for metric_name, data_points in broker_metrics['Metrics'].items():
-                for data_point in data_points:
-                    namespace = 'Kafka'
-                    dimensions = f'#NAMESPACE:{namespace}:#CLUSTERNAME:{cluster_name}:#BROKERNAME:{broker_name}:#BROKERID:{broker_id}:#METRICNAME:{metric_name}'
-                    value = data_point['Average']
-                    writer.writerow([namespace, cluster_name, broker_name, str(broker_id), metric_name, str(value), dimensions, str(value), '#METRICUNIT:%', '#VALUETYPE:Average'])
-
-## ANALIZAR SI ESTAS FUNCIONES SE MANTIENEN
-
 # Obtener detalles de los brokers Kafka
 def get_kafka_brokers(profile):
     session = boto3.Session(profile_name=profile)
@@ -182,88 +171,106 @@ def get_kafka_brokers(profile):
             })
     return brokers
 
-# Guardar resultado JSON en un archivo
-def save_json_to_file(json_data, filepath):
-    with open(filepath, 'w') as json_file:
-        json.dump(json_data, json_file, indent=4)
+# Formatear el nombre del broker para que contenga solo los dos primeros segmentos de su nombre completo (separados por puntos)
+def format_broker_name(full_broker_name):
+    parts = full_broker_name.split('.')
+    if len(parts) >= 3:
+        return '.'.join(parts[:2])  # Toma solo los dos primeros segmentos
+    return full_broker_name  # Devuelve el nombre original si no tiene suficientes puntos
 
-# Mostrar resultado en formato JSON con cada línea como un string en el formato original
-def print_metrics_as_json(all_metrics_json):
+def print_metrics_as_json(all_metrics_json, awprofile):
     formatted_lines = {"data": []}
+    offline_partitions_sum = {}  # Acumulador para las métricas de cluster
+
+    # Agregar información general dentro de "data"
+    formatted_lines["data"].append({
+        "{#INFO}": f"disc_AWSKafka_ItemsBrokers.py {awprofile} Kafka",
+        "{#MSG}": "Metricas obtenidas con exito.",
+        "{#EXIT}": "0",
+        "{#REGISTROS}": str(sum(len(broker_metrics['Metrics'][metric_name]) for broker_metrics in all_metrics_json for metric_name in broker_metrics['Metrics']))
+    })
+
+    # Procesar métricas de los brokers y acumular offlinePartitionsCount en el cluster
     for broker_metrics in all_metrics_json:
         cluster_name = broker_metrics['ClusterName']
-        broker_name = broker_metrics['BrokerName']
+        broker_name = format_broker_name(broker_metrics['BrokerName'])  # Aplicar formato
         broker_id = broker_metrics['BrokerId']
+
         for metric_name, data_points in broker_metrics['Metrics'].items():
-            for data_point in data_points:
-                namespace = 'Kafka'
-                value = data_point['Average']
-                metric_data = {
-                    "{#NAMESPACE}": namespace,
-                    "{#CLUSTERNAME}": cluster_name,
-                    "{#BROKERNAME}": broker_name,
-                    "{#BROKERID}": str(broker_id),
-                    "{#METRICNAME}": metric_name,
-                    "{#VALUE}": str(value),
-                    "{#METRICUNIT}": "%",
-                    "{#VALUETYPE}": "Average"
-                }
-                formatted_lines["data"].append(metric_data)
-    
+            if metric_name == "offlinePartitionsCount":
+                # Acumular la métrica offlinePartitionsCount a nivel de Cluster
+                offline_partitions_sum[cluster_name] = offline_partitions_sum.get(cluster_name, 0) + sum(data_point['Average'] for data_point in data_points)
+            else:
+                # Procesar otras métricas normalmente
+                for data_point in data_points:
+                    namespace = 'Kafka'
+                    value = f"{round(data_point['Average'], 2):.2f}"  # Formatear la salida con dos decimales
+                    metric_data = {
+                        "{#AWSPROFILE}": awprofile,
+                        "{#NAMESPACE}": namespace,
+                        "{#CLUSTERNAME}": cluster_name,
+                        "{#BROKERNAME}": broker_name,
+                        "{#BROKERID}": str(broker_id),
+                        "{#METRICNAME}": metric_name,
+                        "{#VALUE}": value,
+                        "{#METRICUNIT}": "%",
+                        "{#VALUETYPE}": "Average"
+                    }
+                    formatted_lines["data"].append(metric_data)
+
+    # Agregar la métrica offlinePartitionsCount separado por cluster
+    for cluster, total_value in offline_partitions_sum.items():
+        formatted_lines["data"].append({
+            "{#AWSPROFILE}": awprofile,
+            "{#NAMESPACE}": "Kafka",
+            "{#CLUSTERNAME}": cluster,
+            "{#METRICNAME}": "offlinePartitionsCount",
+            "{#VALUE}": f"{round(total_value, 2):.2f}",
+            "{#VALUETYPE}": "Sum"
+        })
+
     print(json.dumps(formatted_lines, separators=(',', ':')))
 
 # Función principal del script
+
 def main():
     parser = argparse.ArgumentParser(description="Obtención de métricas AWS Kafka")
     parser.add_argument('awprofile', help="Perfil de AWS")
+    parser.add_argument('clustername', nargs='?', default=None, help="Nombre del cluster para filtrar métricas (opcional)")
     parser.add_argument('awsaccount', nargs='?', default="AWS", help="Cuenta de AWS")
     args = parser.parse_args()
 
-    awsmetric = "Kafka"
     awprofile = args.awprofile
+    clustername_filter = args.clustername  # Ahora puede ser None
     awsaccount = args.awsaccount
-    script_dir = "/usr/lib/nagios/plugins/aws_integration"
-    
-    if not os.path.exists(script_dir):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    log_file = os.path.join(script_dir, 'logs', f"{datetime.now().strftime('%Y-%m-%d')}_disc_AWSKafka_ItemsBrokers.log")
 
-    # Verificar comandos
-    if not check_commands():
-        exit(1)
-    
-    # Obtener brokers Kafka
+    # Obtener todos los brokers de Kafka
     brokers = get_kafka_brokers(awprofile)
 
-    total_records = 0  # Variable para acumular el total de métricas
+    # Si el usuario **pasó** un cluster, filtrar por su nombre
+    if clustername_filter:
+        brokers = [broker for broker in brokers if broker['ClusterName'] == clustername_filter]
 
+    # Si **no hay brokers** después del filtro, mostrar mensaje con exit=2
+    if not brokers:
+        zbx_json_output(awprofile, "Kafka", 2, 0, f"No se encontraron brokers para el cluster '{clustername_filter}'")
+        return
+
+    total_records = 0
     all_metrics_json = []
+
     for broker in brokers:
         broker_metrics = get_broker_metrics(awprofile, broker['ClusterName'], broker['BrokerId'], broker['BrokerName'])
         metrics_json = generate_metrics_json(broker_metrics, broker['ClusterName'], broker['BrokerId'], broker['BrokerName'])
         all_metrics_json.append(metrics_json)
-    
+
     for broker_metrics in all_metrics_json:
         for metric_name, data_points in broker_metrics['Metrics'].items():
-            total_records += len(data_points)  # Contar cada línea de datos (métricas recolectadas)
-    
+            total_records += len(data_points)
 
-    # Mostrar mensaje único con el total de métricas obtenidas
-    zbx_json_output(awprofile, awsmetric, "Metricas obtenidas con exito.", "0", total_records)
-    
-    # Mostrar resultado en formato CSV en pantalla
-    # print_metrics_as_csv(all_metrics_json)
-    print_metrics_as_json(all_metrics_json)
-
-
-    # Guardar resultado en un archivo JSON
-    json_output_path = os.path.join(script_dir, 'dbs/queries', f"{awprofile}.{awsmetric}.queries.json")
-    save_json_to_file(all_metrics_json, json_output_path)
-    
-    # Guardar resultado en un archivo CSV
-    csv_output_path = os.path.join(script_dir, 'dbs/csv', f"{awprofile}.{awsmetric}.metrics.csv")
-    save_metrics_to_csv(all_metrics_json, csv_output_path)
+    # Mostrar salida filtrada con el argumento awprofile corregido
+    # zbx_json_output(awprofile, "Kafka", 0, total_records)
+    print_metrics_as_json(all_metrics_json, awprofile)
 
 if __name__ == "__main__":
     main()
