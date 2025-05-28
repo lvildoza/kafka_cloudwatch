@@ -1,0 +1,17 @@
+{"data":[
+    {"{#INFO}":"disc_AWSKafka_ItemsBrokers.py UsrAWS_008_Acquiring_Prod Kafka","{#MSG}":"Brokers obtenidos con exito.","{#EXIT}":"0","{#REGISTROS}":"12"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-2.concentradortxprodclus","{#BROKERID}":"2"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-1.concentradortxprodclus","{#BROKERID}":"1"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-3.concentradortxprodclus","{#BROKERID}":"3"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-2.fondeoprodcluster","{#BROKERID}":"2"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-1.fondeoprodcluster","{#BROKERID}":"1"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-3.fondeoprodcluster","{#BROKERID}":"3"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-3.my-msk-cluster-prod","{#BROKERID}":"3"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-1.my-msk-cluster-prod","{#BROKERID}":"1"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-2.my-msk-cluster-prod","{#BROKERID}":"2"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-2.fondeopreprodcluster","{#BROKERID}":"2"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-3.fondeopreprodcluster","{#BROKERID}":"3"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#BROKERNAME}":"b-1.fondeopreprodcluster","{#BROKERID}":"1"}
+    ]
+}
+

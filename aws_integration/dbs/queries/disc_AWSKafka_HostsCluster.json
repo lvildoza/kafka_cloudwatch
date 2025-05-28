@@ -1,0 +1,13 @@
+{"data":[
+    {"{#INFO}":"disc_AWSKafka_HostsCluster.py UsrAWS_008_Acquiring_Prod Kafka","{#MSG}":"Clusters obtenidos con exito.","{#EXIT}":"0","{#REGISTROS}":"4"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"ConcentradorTx-prod-cluster"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"fondeo-prod-cluster"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"my-msk-cluster-prod"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"fondeo-preprod-cluster"}
+    ]
+}
+
+
+
+
+

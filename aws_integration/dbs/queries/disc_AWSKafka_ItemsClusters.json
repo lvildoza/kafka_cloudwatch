@@ -1,0 +1,11 @@
+{"data":[
+    {"{#INFO}":"disc_AWSKafka_ItemsClusters.py UsrAWS_008_Acquiring_Prod Kafka","{#MSG}":"Metricas obtenidas con exito.","{#EXIT}":"0","{#REGISTROS}":"4"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"ConcentradorTx-prod-cluster","CLUSTERMETRIC":"offlinePartitionsCount","CLUSTERVALUE":"0.00","CLUSTERVALUETYPE":"Sum"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"fondeo-prod-cluster","CLUSTERMETRIC":"offlinePartitionsCount","CLUSTERVALUE":"0.00","CLUSTERVALUETYPE":"Sum"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"my-msk-cluster-prod","CLUSTERMETRIC":"offlinePartitionsCount","CLUSTERVALUE":"0.00","CLUSTERVALUETYPE":"Sum"},
+    {"{#AWSPROFILE}":"UsrAWS_008_Acquiring_Prod","{#NAMESPACE}":"AWS/Kafka","{#CLUSTERNAME}":"fondeo-preprod-cluster","CLUSTERMETRIC":"offlinePartitionsCount","CLUSTERVALUE":"0.00","CLUSTERVALUETYPE":"Sum"}
+    ]
+}
+
+
+
